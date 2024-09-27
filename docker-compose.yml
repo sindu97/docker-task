@@ -1,0 +1,71 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "taskmanager"
+      MYSQL_USER: "root" # This may be unnecessary if you're using the root user
+      MYSQL_ROOT_PASSWORD: "sr263804R!"
+    ports:
+      - "3306:3306" # Expose MySQL on host port 3306
+    volumes:
+      - mysql_data:/var/lib/mysql # Persist MySQL data
+    networks:
+      - app-network
+
+  # Laravel Application
+  laravel:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000" # Expose Laravel on host port 8000
+    volumes:
+      - ./laravel:/var/www/html # Mount local Laravel folder
+    depends_on:
+      - mysql # Ensure MySQL starts before Laravel
+    networks:
+      - app-network
+
+  # Core PHP Application
+  corephp:
+    build:
+      context: ./corephp
+      dockerfile: Dockerfile
+    container_name: corephp_app
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Expose Core PHP on host port 8080
+    volumes:
+      - ./corephp:/var/www/html # Mount local Core PHP folder
+    depends_on:
+      - mysql # Ensure MySQL starts before Core PHP
+    networks:
+      - app-network
+
+  # phpMyAdmin for database access
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql # Connect to MySQL container
+      PMA_USER: user # Use the same user for phpMyAdmin
+      PMA_PASSWORD: "Test@1234" # Password for the new user
+    ports:
+      - "8081:80" # Expose phpMyAdmin on host port 8081
+    depends_on:
+      - mysql # Ensure MySQL starts before phpMyAdmin
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
